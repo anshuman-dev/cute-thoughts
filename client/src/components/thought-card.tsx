@@ -59,9 +59,7 @@ export function ThoughtCard() {
 
   // Update the displayed thought when a new one is generated from the contract
   useEffect(() => {
-    console.log('Thought generation status:', { isSuccess, generatedThought, currentThought });
     if (isSuccess && generatedThought && generatedThought !== currentThought) {
-      console.log('Updating thought to:', generatedThought);
       setCurrentThought(generatedThought);
       setShowShareButtons(true);
       toast({
