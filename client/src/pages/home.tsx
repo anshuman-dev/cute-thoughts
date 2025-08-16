@@ -114,9 +114,9 @@ export default function Home() {
               <div className="space-y-2 text-sm text-gray-600">
                 <p>Base Mainnet</p>
                 <p className="font-mono text-xs bg-gray-100 p-2 rounded break-all">
-                  0x1234...5678
+                  0x7B09...b14d
                 </p>
-                <a href="#" className="text-cute-pink hover:text-cute-lavender transition-colors duration-200">
+                <a href="https://basescan.org/address/0x7B096f6836bF28194061870EA4DFae8196F4b14d" target="_blank" rel="noopener noreferrer" className="text-cute-pink hover:text-cute-lavender transition-colors duration-200">
                   View on BaseScan
                 </a>
               </div>

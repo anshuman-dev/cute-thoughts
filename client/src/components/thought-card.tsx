@@ -20,7 +20,9 @@ export function ThoughtCard() {
     isPending,
     isConfirming,
     isSuccess,
-    error
+    error,
+    generatedThought,
+    setGeneratedThought
   } = useGenerateThought();
 
   const handleGenerateThought = () => {
@@ -33,6 +35,9 @@ export function ThoughtCard() {
       return;
     }
 
+    // Reset thought and show buttons state
+    setGeneratedThought('');
+    setShowShareButtons(false);
     generateFreeThought();
   };
 
@@ -46,26 +51,15 @@ export function ThoughtCard() {
       return;
     }
 
+    // Reset thought and show buttons state
+    setGeneratedThought('');
+    setShowShareButtons(false);
     generateThoughtWithTip(amount);
   };
 
-  // Mock thought generation for display (in real app, this would come from contract events)
-  const mockThoughts = [
-    "You're like a warm hug on a cold day!",
-    "Your smile could light up the entire blockchain!",
-    "You're absolutely pawsome!",
-    "Sending you virtual cookies and good vibes!",
-    "You're a rare gem in this digital world!",
-    "Your kindness creates ripples of joy!",
-    "You're the reason someone smiles today!",
-    "Like a butterfly, you bring beauty wherever you go!",
-    "You're proof that magic exists!",
-    "Your heart is made of pure stardust!"
-  ];
-
-  if (isSuccess && currentThought === "Click below to generate your first cute thought! 💕") {
-    const randomThought = mockThoughts[Math.floor(Math.random() * mockThoughts.length)];
-    setCurrentThought(randomThought);
+  // Update the displayed thought when a new one is generated from the contract
+  if (isSuccess && generatedThought && generatedThought !== currentThought) {
+    setCurrentThought(generatedThought);
     setShowShareButtons(true);
     toast({
       title: "Cute thought generated! ✨",

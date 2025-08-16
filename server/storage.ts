@@ -38,6 +38,8 @@ export class MemStorage implements IStorage {
     const thought: Thought = { 
       ...insertThought, 
       id,
+      transactionHash: insertThought.transactionHash ?? null,
+      tipAmount: insertThought.tipAmount ?? null,
       createdAt: new Date()
     };
     this.thoughts.set(id, thought);
@@ -59,6 +61,9 @@ export class MemStorage implements IStorage {
     const share: SocialShare = { 
       ...insertShare, 
       id,
+      thoughtId: insertShare.thoughtId ?? null,
+      shareUrl: insertShare.shareUrl ?? null,
+      shared: insertShare.shared ?? null,
       createdAt: new Date()
     };
     this.socialShares.set(id, share);

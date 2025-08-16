@@ -16,7 +16,7 @@ export const config = createConfig({
   },
 });
 
-export const CUTE_THOUGHTS_CONTRACT_ADDRESS = '0x1234567890123456789012345678901234567890' as const;
+export const CUTE_THOUGHTS_CONTRACT_ADDRESS = '0x7B096f6836bF28194061870EA4DFae8196F4b14d' as const;
 
 export const CUTE_THOUGHTS_ABI = [
   {

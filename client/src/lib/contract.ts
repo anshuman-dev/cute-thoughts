@@ -1,6 +1,7 @@
-import { parseEther, formatEther } from 'viem';
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { parseEther, formatEther, decodeEventLog } from 'viem';
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
 import { CUTE_THOUGHTS_CONTRACT_ADDRESS, CUTE_THOUGHTS_ABI } from './web3';
+import { useState, useEffect } from 'react';
 
 export function useCuteThoughtsContract() {
   const { data: totalThoughts } = useReadContract({
@@ -60,10 +61,50 @@ export function useUserStats(address?: string) {
 
 export function useGenerateThought() {
   const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const publicClient = usePublicClient();
+  const [generatedThought, setGeneratedThought] = useState<string>('');
   
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({
     hash,
   });
+
+  // Extract thought from transaction receipt
+  useEffect(() => {
+    if (isSuccess && receipt && publicClient) {
+      const extractThought = async () => {
+        try {
+          // Get the logs from the transaction receipt
+          const logs = receipt.logs;
+          
+          // Find the ThoughtGenerated event
+          for (const log of logs) {
+            if (log.address.toLowerCase() === CUTE_THOUGHTS_CONTRACT_ADDRESS.toLowerCase()) {
+              try {
+                const decoded = decodeEventLog({
+                  abi: CUTE_THOUGHTS_ABI,
+                  data: log.data,
+                  topics: log.topics,
+                  eventName: 'ThoughtGenerated'
+                });
+                
+                if (decoded.args) {
+                  const thought = decoded.args.thought as string;
+                  setGeneratedThought(thought);
+                  break;
+                }
+              } catch (parseError) {
+                console.log('Error parsing log:', parseError);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error extracting thought from receipt:', error);
+        }
+      };
+      
+      extractThought();
+    }
+  }, [isSuccess, receipt, publicClient]);
 
   const generateFreeThought = () => {
     writeContract({
@@ -90,5 +131,7 @@ export function useGenerateThought() {
     isConfirming,
     isSuccess,
     error,
+    generatedThought,
+    setGeneratedThought,
   };
 }

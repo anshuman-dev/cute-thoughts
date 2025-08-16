@@ -31,7 +31,7 @@ export function useContractEvents() {
               { name: 'thoughtNumber', type: 'uint256' }
             ]
           },
-          fromBlock: 'earliest',
+          fromBlock: 'latest',
           toBlock: 'latest'
         });
 
