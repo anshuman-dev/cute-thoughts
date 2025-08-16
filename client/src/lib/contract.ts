@@ -70,15 +70,19 @@ export function useGenerateThought() {
 
   // Extract thought from transaction receipt
   useEffect(() => {
+    console.log('Contract hook state:', { isSuccess, receipt: !!receipt, publicClient: !!publicClient });
     if (isSuccess && receipt && publicClient) {
       const extractThought = async () => {
         try {
-          // Get the logs from the transaction receipt
+          console.log('Extracting thought from receipt:', receipt);
           const logs = receipt.logs;
+          console.log('Found logs:', logs.length);
           
           // Find the ThoughtGenerated event
           for (const log of logs) {
+            console.log('Checking log:', log.address, 'vs', CUTE_THOUGHTS_CONTRACT_ADDRESS);
             if (log.address.toLowerCase() === CUTE_THOUGHTS_CONTRACT_ADDRESS.toLowerCase()) {
+              console.log('Found contract log, attempting to decode...');
               try {
                 const decoded = decodeEventLog({
                   abi: CUTE_THOUGHTS_ABI,
@@ -87,8 +91,10 @@ export function useGenerateThought() {
                   eventName: 'ThoughtGenerated'
                 });
                 
+                console.log('Decoded event:', decoded);
                 if (decoded.args) {
                   const thought = decoded.args.thought as string;
+                  console.log('Extracted thought:', thought);
                   setGeneratedThought(thought);
                   break;
                 }

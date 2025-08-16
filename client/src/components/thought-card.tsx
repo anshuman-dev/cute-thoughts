@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Heart, RefreshCw, Share2, Twitter, Instagram } from 'lucide-react';
@@ -58,14 +58,18 @@ export function ThoughtCard() {
   };
 
   // Update the displayed thought when a new one is generated from the contract
-  if (isSuccess && generatedThought && generatedThought !== currentThought) {
-    setCurrentThought(generatedThought);
-    setShowShareButtons(true);
-    toast({
-      title: "Cute thought generated! ✨",
-      description: "Your adorable thought is ready to spread joy!",
-    });
-  }
+  useEffect(() => {
+    console.log('Thought generation status:', { isSuccess, generatedThought, currentThought });
+    if (isSuccess && generatedThought && generatedThought !== currentThought) {
+      console.log('Updating thought to:', generatedThought);
+      setCurrentThought(generatedThought);
+      setShowShareButtons(true);
+      toast({
+        title: "Cute thought generated! ✨",
+        description: "Your adorable thought is ready to spread joy!",
+      });
+    }
+  }, [isSuccess, generatedThought, currentThought, toast]);
 
   const isLoading = isPending || isConfirming;
 
