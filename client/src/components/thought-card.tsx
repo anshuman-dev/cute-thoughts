@@ -158,10 +158,25 @@ export function ThoughtCard() {
             </Button>
             <Button
               onClick={() => shareOnFarcaster(currentThought)}
-              className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg"
+              className="text-white p-3 rounded-full transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg"
+              style={{ 
+                backgroundColor: '#8A63D2', 
+                '--tw-gradient-from': '#8A63D2',
+                '--tw-gradient-to': '#7A55C7'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#7A55C7';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#8A63D2';
+              }}
               data-testid="share-farcaster-button"
             >
-              <span className="text-sm font-bold">FC</span>
+              <img 
+                src="/farcaster-logo.png" 
+                alt="Farcaster" 
+                className="w-5 h-5"
+              />
             </Button>
             <Button
               onClick={() => shareOnInstagram(currentThought)}
