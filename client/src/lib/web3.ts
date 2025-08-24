@@ -12,7 +12,7 @@ export const config = createConfig({
     walletConnect({ projectId }),
   ],
   transports: {
-    [base.id]: http(),
+    [base.id]: http(import.meta.env.VITE_BASE_RPC_URL || 'https://base-rpc.publicnode.com'),
   },
 });
 

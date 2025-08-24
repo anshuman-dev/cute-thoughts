@@ -73,6 +73,9 @@ export function useThoughtSync() {
               }
             }
           },
+          onError: (error) => {
+            console.warn('Event listener error (will retry):', error.message);
+          }
         });
 
         // Also listen for TipReceived events to update tip amounts
@@ -92,10 +95,14 @@ export function useThoughtSync() {
               }
             }
           },
+          onError: (error) => {
+            console.warn('Tip event listener error (will retry):', error.message);
+          }
         });
 
       } catch (error) {
-        console.error('Error setting up event listeners:', error);
+        console.warn('Error setting up event listeners (will retry):', error.message);
+        // Don't throw - let the app continue working
       }
     };
 
@@ -109,13 +116,16 @@ export function useThoughtSync() {
     };
   }, [publicClient, address, queryClient]);
 
-  // Sync historical events on first load
+  // Sync historical events on first load (but don't block UI if RPC fails)
   useEffect(() => {
     if (!publicClient || !address) return;
 
     const syncHistoricalEvents = async () => {
       try {
-        // Get historical events for the current user
+        // Get historical events for the current user with recent blocks only to avoid timeouts
+        const currentBlock = await publicClient.getBlockNumber();
+        const fromBlock = currentBlock - 10000n; // Last ~10,000 blocks (~1-2 days on Base)
+        
         const logs = await publicClient.getLogs({
           address: CUTE_THOUGHTS_CONTRACT_ADDRESS,
           event: {
@@ -130,7 +140,7 @@ export function useThoughtSync() {
           args: {
             user: address
           },
-          fromBlock: 'earliest',
+          fromBlock,
           toBlock: 'latest'
         });
 
@@ -156,12 +166,13 @@ export function useThoughtSync() {
         });
 
       } catch (error) {
-        console.error('Error syncing historical events:', error);
+        console.warn('Unable to sync historical events - RPC may be unavailable:', error.message);
+        // Don't throw error, just log warning - the UI should still work without historical sync
       }
     };
 
     // Small delay to avoid overwhelming the RPC
-    const timer = setTimeout(syncHistoricalEvents, 1000);
+    const timer = setTimeout(syncHistoricalEvents, 2000);
     return () => clearTimeout(timer);
   }, [publicClient, address, queryClient]);
 }
