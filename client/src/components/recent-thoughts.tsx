@@ -1,48 +1,48 @@
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, Share2 } from 'lucide-react';
-import { useContractEvents } from '@/hooks/use-contract';
+import { Heart, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useUserThoughts } from '@/hooks/use-user-thoughts';
 import { useSocialShare } from '@/hooks/use-social-share';
 import { useAccount } from 'wagmi';
+import { useState } from 'react';
 
 export function RecentThoughts() {
   const { address } = useAccount();
-  const { recentThoughts } = useContractEvents();
   const { shareOnTwitter } = useSocialShare();
-
-  // Filter user's thoughts if connected
-  const userThoughts = address 
-    ? recentThoughts.filter(thought => thought.user.toLowerCase() === address.toLowerCase())
-    : [];
-
-  // Mock thoughts for demonstration when no real thoughts are available
-  const mockThoughts = [
-    {
-      id: '1',
-      content: "Your smile could light up the entire blockchain!",
-      timestamp: "5 minutes ago",
-      user: address || "0x1234...5678"
-    },
-    {
-      id: '2', 
-      content: "You're absolutely pawsome!",
-      timestamp: "1 hour ago",
-      user: address || "0x1234...5678"
-    },
-    {
-      id: '3',
-      content: "You're like a warm hug on a cold day!",
-      timestamp: "2 hours ago", 
-      user: address || "0x1234...5678"
-    }
-  ];
-
-  const thoughtsToShow = userThoughts.length > 0 ? userThoughts.map(thought => ({
-    id: thought.transactionHash,
-    content: thought.thought,
-    timestamp: thought.timestamp.toLocaleString(),
-    user: thought.user
-  })) : (address ? [] : mockThoughts);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  
+  const { 
+    data: userThoughtsData, 
+    isLoading, 
+    error,
+    refetch 
+  } = useUserThoughts(currentPage, pageSize);
+  
+  const thoughts = userThoughtsData?.thoughts || [];
+  const pagination = userThoughtsData?.pagination;
+  
+  const formatTimestamp = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+  };
+  
+  const thoughtsToShow = thoughts.map(thought => ({
+    id: thought.id,
+    content: thought.content,
+    timestamp: formatTimestamp(thought.createdAt),
+    user: thought.userAddress,
+    transactionHash: thought.transactionHash,
+    tipAmount: thought.tipAmount
+  }));
 
   return (
     <section className="mb-12">
@@ -51,7 +51,24 @@ export function RecentThoughts() {
           {address ? 'Your Recent Thoughts' : 'Recent Community Thoughts'}
         </h3>
         
-        {thoughtsToShow.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-8" data-testid="loading-state">
+            <div className="w-16 h-16 bg-gradient-to-r from-cute-pink to-cute-lavender rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <Heart className="w-8 h-8 text-white" />
+            </div>
+            <p className="text-cute-gray">Loading your thoughts...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8" data-testid="error-state">
+            <div className="w-16 h-16 bg-gradient-to-r from-red-400 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Heart className="w-8 h-8 text-white" />
+            </div>
+            <p className="text-red-600 mb-2">Failed to load thoughts</p>
+            <Button onClick={() => refetch()} variant="outline" size="sm">
+              Try Again
+            </Button>
+          </div>
+        ) : thoughtsToShow.length === 0 ? (
           <div className="text-center py-8" data-testid="empty-state">
             <div className="w-16 h-16 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
               <Heart className="w-8 h-8 text-gray-400" />
@@ -67,7 +84,11 @@ export function RecentThoughts() {
                 data-testid={`thought-card-${thought.id}`}
               >
                 <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-cute-peach to-cute-mint rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <div className={`w-8 h-8 bg-gradient-to-r ${
+                    thought.tipAmount && parseFloat(thought.tipAmount) > 0 
+                      ? 'from-yellow-400 to-orange-400' 
+                      : 'from-cute-peach to-cute-mint'
+                  } rounded-full flex items-center justify-center flex-shrink-0 mt-1`}>
                     <Heart className="w-4 h-4 text-white" />
                   </div>
                   <div className="flex-1">
@@ -75,9 +96,16 @@ export function RecentThoughts() {
                       "{thought.content}"
                     </p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500" data-testid={`thought-timestamp-${thought.id}`}>
-                        {thought.timestamp}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-500" data-testid={`thought-timestamp-${thought.id}`}>
+                          {thought.timestamp}
+                        </span>
+                        {thought.tipAmount && parseFloat(thought.tipAmount) > 0 && (
+                          <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                            💝 {parseFloat(thought.tipAmount).toFixed(4)} ETH
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center space-x-1">
                         <Button
                           variant="ghost"
@@ -94,6 +122,75 @@ export function RecentThoughts() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+        
+        {/* Pagination Controls */}
+        {pagination && pagination.totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-between" data-testid="pagination">
+            <div className="text-sm text-gray-600">
+              Showing {thoughts.length} of {pagination.total} thoughts
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => p - 1)}
+                disabled={!pagination.hasPrev}
+                className="flex items-center space-x-1"
+                data-testid="prev-page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Previous</span>
+              </Button>
+              
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  const pageNumber = i + 1;
+                  const isCurrentPage = pageNumber === pagination.page;
+                  
+                  return (
+                    <Button
+                      key={pageNumber}
+                      variant={isCurrentPage ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNumber)}
+                      className={isCurrentPage ? "bg-cute-pink hover:bg-cute-pink/90" : ""}
+                      data-testid={`page-${pageNumber}`}
+                    >
+                      {pageNumber}
+                    </Button>
+                  );
+                })}
+                
+                {pagination.totalPages > 5 && (
+                  <>
+                    <span className="text-gray-400">...</span>
+                    <Button
+                      variant={pagination.page === pagination.totalPages ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pagination.totalPages)}
+                      className={pagination.page === pagination.totalPages ? "bg-cute-pink hover:bg-cute-pink/90" : ""}
+                      data-testid={`page-${pagination.totalPages}`}
+                    >
+                      {pagination.totalPages}
+                    </Button>
+                  </>
+                )}
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => p + 1)}
+                disabled={!pagination.hasNext}
+                className="flex items-center space-x-1"
+                data-testid="next-page"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         )}
       </Card>

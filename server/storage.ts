@@ -5,6 +5,7 @@ export interface IStorage {
   // Thoughts
   getThought(id: string): Promise<Thought | undefined>;
   getThoughtsByUser(userAddress: string): Promise<Thought[]>;
+  getThoughtsByUserPaginated(userAddress: string, limit: number, offset: number): Promise<{thoughts: Thought[], total: number}>;
   createThought(thought: InsertThought): Promise<Thought>;
   getAllThoughts(): Promise<Thought[]>;
   
@@ -31,6 +32,17 @@ export class MemStorage implements IStorage {
     return Array.from(this.thoughts.values()).filter(
       (thought) => thought.userAddress.toLowerCase() === userAddress.toLowerCase(),
     );
+  }
+
+  async getThoughtsByUserPaginated(userAddress: string, limit: number, offset: number): Promise<{thoughts: Thought[], total: number}> {
+    const userThoughts = Array.from(this.thoughts.values())
+      .filter((thought) => thought.userAddress.toLowerCase() === userAddress.toLowerCase())
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    
+    const total = userThoughts.length;
+    const thoughts = userThoughts.slice(offset, offset + limit);
+    
+    return { thoughts, total };
   }
 
   async createThought(insertThought: InsertThought): Promise<Thought> {

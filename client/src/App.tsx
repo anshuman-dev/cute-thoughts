@@ -4,6 +4,7 @@ import { WagmiProvider } from 'wagmi';
 import { config } from './lib/web3';
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useThoughtSync } from "@/hooks/use-thought-sync";
 import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
 
@@ -12,14 +13,19 @@ const queryClient = new QueryClient({
     queries: {
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      staleTime: 30000, // 30 seconds for user thoughts
+      retry: 1,
     },
     mutations: {
       retry: false,
     },
   },
 });
+
+function ThoughtSyncProvider() {
+  useThoughtSync();
+  return null;
+}
 
 function Router() {
   return (
@@ -35,6 +41,7 @@ function App() {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
+          <ThoughtSyncProvider />
           <Toaster />
           <Router />
         </TooltipProvider>

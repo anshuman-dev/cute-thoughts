@@ -14,12 +14,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get thoughts by user address
+  // Get thoughts by user address with pagination
   app.get("/api/thoughts/user/:address", async (req, res) => {
     try {
       const { address } = req.params;
-      const thoughts = await storage.getThoughtsByUser(address);
-      res.json(thoughts);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const offset = (page - 1) * limit;
+      
+      const result = await storage.getThoughtsByUserPaginated(address, limit, offset);
+      res.json({
+        thoughts: result.thoughts,
+        pagination: {
+          page,
+          limit,
+          total: result.total,
+          totalPages: Math.ceil(result.total / limit),
+          hasNext: page * limit < result.total,
+          hasPrev: page > 1
+        }
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch user thoughts" });
     }
