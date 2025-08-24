@@ -29,14 +29,6 @@ export function StatsSection() {
       bgGradient: "from-cyan-50 to-blue-50",
       iconGradient: "from-cute-mint to-cyan-400",
       testId: "stat-unique-users"
-    },
-    {
-      icon: TrendingUp,
-      value: parseFloat(contractBalance).toFixed(3),
-      label: "ETH Balance",
-      bgGradient: "from-green-50 to-emerald-50",
-      iconGradient: "from-green-400 to-emerald-500",
-      testId: "stat-contract-balance"
     }
   ];
 
@@ -47,7 +39,7 @@ export function StatsSection() {
           Community Stats
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {stats.map((stat, index) => (
             <div
               key={index}
