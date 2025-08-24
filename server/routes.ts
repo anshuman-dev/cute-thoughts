@@ -4,12 +4,28 @@ import { storage } from "./storage";
 import { insertThoughtSchema, insertSocialShareSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Debug endpoint to check storage state
+  app.get("/api/debug/storage", async (req, res) => {
+    try {
+      const allThoughts = await storage.getAllThoughts();
+      res.json({
+        totalThoughts: allThoughts.length,
+        thoughts: allThoughts,
+        message: "Storage debug info"
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get debug info" });
+    }
+  });
+
   // Get all thoughts
   app.get("/api/thoughts", async (req, res) => {
     try {
       const thoughts = await storage.getAllThoughts();
+      console.log(`📊 GET /api/thoughts - returning ${thoughts.length} thoughts`);
       res.json(thoughts);
     } catch (error) {
+      console.error('❌ Error in GET /api/thoughts:', error);
       res.status(500).json({ message: "Failed to fetch thoughts" });
     }
   });
@@ -22,8 +38,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 10;
       const offset = (page - 1) * limit;
       
+      console.log(`🔍 GET /api/thoughts/user/${address} - page ${page}, limit ${limit}`);
+      
       const result = await storage.getThoughtsByUserPaginated(address, limit, offset);
-      res.json({
+      
+      console.log(`📊 Found ${result.total} total thoughts for user ${address}, returning ${result.thoughts.length} for this page`);
+      
+      const response = {
         thoughts: result.thoughts,
         pagination: {
           page,
@@ -33,8 +54,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hasNext: page * limit < result.total,
           hasPrev: page > 1
         }
-      });
+      };
+      
+      res.json(response);
     } catch (error) {
+      console.error('❌ Error in GET /api/thoughts/user/:address:', error);
       res.status(500).json({ message: "Failed to fetch user thoughts" });
     }
   });
@@ -42,10 +66,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new thought
   app.post("/api/thoughts", async (req, res) => {
     try {
+      console.log('💾 POST /api/thoughts - received data:', req.body);
+      
       const validatedData = insertThoughtSchema.parse(req.body);
+      console.log('✅ Validation passed:', validatedData);
+      
       const thought = await storage.createThought(validatedData);
+      console.log('✅ Thought created successfully:', thought);
+      
       res.status(201).json(thought);
     } catch (error) {
+      console.error('❌ Error in POST /api/thoughts:', error);
+      
       if (error instanceof Error) {
         res.status(400).json({ message: error.message });
       } else {

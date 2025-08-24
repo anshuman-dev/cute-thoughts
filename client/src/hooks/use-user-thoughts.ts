@@ -25,11 +25,17 @@ interface UserThoughtsResponse {
 }
 
 async function fetchUserThoughts(address: string, page: number = 1, limit: number = 10): Promise<UserThoughtsResponse> {
+  console.log(`🔍 Fetching thoughts for user ${address}, page ${page}, limit ${limit}`);
+  
   const response = await fetch(`/api/thoughts/user/${address}?page=${page}&limit=${limit}`);
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`❌ Failed to fetch user thoughts: ${response.status} - ${errorText}`);
     throw new Error('Failed to fetch user thoughts');
   }
   const data = await response.json();
+  
+  console.log(`📊 Received ${data.thoughts?.length || 0} thoughts from backend:`, data);
   
   // Convert date strings to Date objects
   if (data.thoughts) {

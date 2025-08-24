@@ -11,24 +11,32 @@ async function saveThoughtToBackend(
   tipAmount?: bigint
 ) {
   try {
+    const thoughtData = {
+      userAddress,
+      content,
+      transactionHash,
+      tipAmount: tipAmount ? tipAmount.toString() : null,
+    };
+    
+    console.log('💾 Saving thought to backend:', thoughtData);
+    
     const response = await fetch('/api/thoughts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        userAddress,
-        content,
-        transactionHash,
-        tipAmount: tipAmount ? tipAmount.toString() : null,
-      }),
+      body: JSON.stringify(thoughtData),
     });
 
     if (!response.ok) {
-      console.error('Failed to save thought to backend:', response.statusText);
+      const errorText = await response.text();
+      console.error('❌ Failed to save thought to backend:', response.status, errorText);
+    } else {
+      const savedThought = await response.json();
+      console.log('✅ Successfully saved thought:', savedThought);
     }
   } catch (error) {
-    console.error('Error saving thought to backend:', error);
+    console.error('❌ Error saving thought to backend:', error);
   }
 }
 
@@ -126,6 +134,8 @@ export function useThoughtSync() {
         const currentBlock = await publicClient.getBlockNumber();
         const fromBlock = currentBlock - 10000n; // Last ~10,000 blocks (~1-2 days on Base)
         
+        console.log(`🔍 Syncing historical events for ${address} from block ${fromBlock} to ${currentBlock}`);
+        
         const logs = await publicClient.getLogs({
           address: CUTE_THOUGHTS_CONTRACT_ADDRESS,
           event: {
@@ -144,9 +154,13 @@ export function useThoughtSync() {
           toBlock: 'latest'
         });
 
+        console.log(`📅 Found ${logs.length} historical ThoughtGenerated events for user ${address}`);
+
         // Save all historical thoughts
         for (const log of logs) {
           const { user, thought } = log.args;
+          
+          console.log(`💭 Processing thought: "${thought}" for user ${user}`);
           
           if (user && thought) {
             await saveThoughtToBackend(
@@ -156,6 +170,24 @@ export function useThoughtSync() {
             );
           }
         }
+
+        // Also try fetching ALL ThoughtGenerated events to see if there are any at all
+        const allLogs = await publicClient.getLogs({
+          address: CUTE_THOUGHTS_CONTRACT_ADDRESS,
+          event: {
+            type: 'event',
+            name: 'ThoughtGenerated',
+            inputs: [
+              { name: 'user', type: 'address', indexed: true },
+              { name: 'thought', type: 'string' },
+              { name: 'thoughtNumber', type: 'uint256' }
+            ]
+          },
+          fromBlock,
+          toBlock: 'latest'
+        });
+
+        console.log(`📊 Total ThoughtGenerated events in recent blocks: ${allLogs.length}`);
 
         // Invalidate queries to refresh the UI
         queryClient.invalidateQueries({ 
